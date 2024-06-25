@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>X O Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      transition: background-color 0.5s, color 0.5s;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 590px;
+      margin: 0;
+      background-color: #f0f0f0;
+      color: #000;
+    }
+    .container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      max-width: 400px; 
+      margin: 0 auto; 
+    }
+    @keyframes pressAnimation {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+    }
+    .square {
+      border: 2px solid black;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100px;
+      height: 100px;
+      font-size: 2em;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.5s, color 0.5s;
+    }
+    .square:hover {
+      background-color: #ddd;
+    }
+    .square.pressed {
+      animation: pressAnimation 0.3s;
+    }
+    .X {
+      color: red;
+    }
+    .O {
+      color: blue;
+    }
+    h1, .status {
+      text-align: center;
+      transition: color 0.5s;
+    }
+    button {
+      border: none;
+      border-radius: 10px;
+      background-color: lime;
+      height: 40px;
+      width: 140px;
+      box-shadow: 0 0 10px lime;
+      cursor: pointer;
+      display: block;
+      margin: 10px auto;
+      transition: background-color 0.5s, box-shadow 0.5s;
+      font-size: 1em;
+      font-weight: bold;
+    }
+    button:hover {
+      background-color: #32cd32;
+      box-shadow: 0 0 15px #32cd32;
+    }
+    button:disabled {
+      background-color: gray;
+      box-shadow: 0 0 10px gray;
+      cursor: not-allowed;
+    }
+    .options-modal {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.5);
+      border: 2px solid black;
+      border-radius: 10px;
+      width: 300px;
+      background-color: #ffffff;
+      text-align: center;
+      padding: 20px;
+      z-index: 1000;
+      backdrop-filter: blur(5px);
+      transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+      opacity: 0;
+    }
+    .options-modal.show {
+      display: block;
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+    }
+    .options-modal .x {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 20px;
+      border: none;
+      background: red;
+      color: white;
+      border-radius: 50%;
+      height: 20px;
+      cursor: pointer;
+    }
+    .toggle__label {
+      cursor: pointer;
+      padding-block: .5rem;
+    }
+    .toggle__check {
+      display: none;
+    }
+    .toggle__rail {
+      position: relative;
+      width: 52px;
+      height: 4px;
+      background-color: hsl(234, 12%, 35%);
+      border-radius: 2rem;
+      margin: auto;
+    }
+    .toggle__circle {
+      display: block;
+      width: 24px;
+      height: 24px;
+      background-color: white;
+      box-shadow: inset 0 0 0 4px hsl(234, 20%, 68%);
+      border-radius: 50%;
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      margin: auto 0;
+      transition: transform .4s, box-shadow .4s;
+      z-index: 2;
+    }
+    .toggle__border {
+      position: absolute;
+      width: 32px;
+      height: 32px;
+      background-color: white;
+      border-radius: 50%;
+      left: -4px;
+      top: 0;
+      bottom: 0;
+      margin: auto 0;
+      transition: transform .4s;
+    }
+    .toggle__check:checked ~ .toggle__rail .toggle__circle {
+      transform: translateX(28px);
+      box-shadow: inset 0 0 0 12px hsl(234, 100%, 98%);
+    }
+    .toggle__check:checked ~ .toggle__rail .toggle__border {
+      transform: translateX(28px);
+    }
+    .toggle-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    /* Dark mode styles */
+    body.dark-mode {
+      background-color: #121212;
+      color: #ffffff;
+    }
+    .container.dark-mode .square {
+      border-color: #ffffff;
+      background-color: #333;
+      color: #ffffff;
+    }
+    .container.dark-mode .X {
+      color: #ff6b6b;
+    }
+    .container.dark-mode .O {
+      color: #1e90ff;
+    }
+    .dark-mode h1, .dark-mode .status {
+      color: #ffffff;
+    }
+    .dark-mode button {
+      background-color: #333;
+      box-shadow: 0 0 10px #333;
+      color: #ffffff;
+    }
+    .dark-mode button:disabled {
+      background-color: gray;
+      box-shadow: 0 0 10px gray;
+      cursor: not-allowed;
+    }
+    .dark-mode .options-modal {
+      background-color: #333;
+      color: #ffffff;
+    }
+    .dark-mode .toggle__rail {
+      background-color: #ffffff;
+    }
+    .dark-mode .toggle__circle {
+      box-shadow: inset 0 0 0 4px #333;
+      background-color: #ffffff;
+    }
+    .dark-mode .toggle__check:checked ~ .toggle__rail .toggle__circle {
+      box-shadow: inset 0 0 0 12px #333;
+      background-color: #ffffff;
+    }
+    .dark-mode .toggle__check:checked ~ .toggle__rail .toggle__border {
+      background-color: #333;
+    }
+    .dark-mode #backgroundButton {
+      background-color: #555;
+      box-shadow: 0 0 10px #555;
+      color: #ffffff;
+      width: 200px; 
+    }
+    .dark-mode #backgroundButton:disabled {
+      background-color: gray;
+      box-shadow: 0 0 10px gray;
+      cursor: not-allowed;
+    }
+    #backgroundButton {
+      width: 200px; 
+    }
+    @keyframes pressAnimationLight {
+      0%, 100% { transform: scale(1); background-color: #ddd; }
+      50% { transform: scale(1.2); background-color: #ccc; }
+    }
+    @keyframes pressAnimationDark {
+      0%, 100% { transform: scale(1); background-color: #555; }
+      50% { transform: scale(1.2); background-color: #444; }
+    }
+    .square {
+      border: 2px solid black;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100px;
+      height: 100px;
+      font-size: 2em;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.5s, color 0.5s;
+      background-color: #fff;
+    }
+    .square:hover {
+      background-color: #ddd;
+    }
+    .square.pressed {
+      animation: pressAnimationLight 0.3s;
+    }
+    .dark-mode .square {
+      border-color: #ffffff;
+      background-color: #333;
+      color: #ffffff;
+    }
+    .dark-mode .square:hover {
+      background-color: #444;
+    }
+    .dark-mode .square.pressed {
+      animation: pressAnimationDark 0.3s;
+    }
+    #easyButton {
+      background-color: lime;
+      box-shadow: 0 0 10px lime;
+    }
+    #easyButton:hover {
+      background-color: #32cd32;
+      box-shadow: 0 0 15px #32cd32;
+    }
+    #mediumButton {
+      background-color: orange;
+      box-shadow: 0 0 10px orange;
+    }
+    #mediumButton:hover {
+      background-color: #ff8c00; /* Dark Orange */
+      box-shadow: 0 0 15px #ff8c00;
+    }
+    #hardButton {
+      background-color: red;
+      box-shadow: 0 0 10px red;
+    }
+    #hardButton:hover {
+      background-color: #ff0000;
+      box-shadow: 0 0 15px #ff0000;
+    }
+    @keyframes difficultyAnimation {
+      0%, 100% { background-color: initial; }
+      50% { background-color: yellow; }
+    }
+    .difficulty-anim {
+      animation: difficultyAnimation 0.5s;
+    }
+    .dark-mode .difficulty-anim {
+      animation: difficultyAnimation 0.5s;
+    }
+    /* Style2 */
+    body.style2 {
+      background-color: #e0f7fa;
+      color: #006064;
+    }
+    .container.style2 .square {
+      border-color: #006064;
+      background-color: #b2ebf2;
+      color: #004d40;
+    }
+    .container.style2 .X {
+      color: #d32f2f;
+    }
+    .container.style2 .O {
+      color: #1976d2;
+    }
+    .style2 h1, .style2 .status {
+      color: #004d40;
+    }
+    .style2 button {
+      background-color: #00acc1;
+      box-shadow: 0 0 10px #00acc1;
+      color: #ffffff;
+    }
+    .style2 button:disabled {
+      background-color: gray;
+      box-shadow: 0 0 10px gray;
+      cursor: not-allowed;
+    }
+    .style2 .options-modal {
+      background-color: #b2ebf2;
+      color: #004d40;
+    }
+    .style2 .toggle__rail {
+      background-color: #004d40;
+    }
+    .style2 .toggle__circle {
+      box-shadow: inset 0 0 0 4px #b2ebf2;
+      background-color: #004d40;
+    }
+    .style2 .toggle__check:checked ~ .toggle__rail .toggle__circle {
+      box-shadow: inset 0 0 0 12px #004d40;
+      background-color: #b2ebf2;
+    }
+    .style2 .toggle__check:checked ~ .toggle__rail .toggle__border {
+      background-color: #004d40;
+    }
+    .style2 #backgroundButton {
+      background-color: #00acc1;
+      box-shadow: 0 0 10px #00acc1;
+      color: #ffffff;
+      width: 200px; 
+    }
+    .style2 #backgroundButton:disabled {
+      background-color: gray;
+      box-shadow: 0 0 10px gray;
+      cursor: not-allowed;
+    }
+    /* Dark Mode for Style2 */
+    .dark-mode.style2 {
+      background-color: #004d40;
+      color: #e0f7fa;
+    }
+    .container.dark-mode.style2 .square {
+      border-color: #e0f7fa;
+      background-color: #004d40;
+      color: #b2ebf2;
+    }
+    .container.dark-mode.style2 .X {
+      color: #ef5350;
+    }
+    .container.dark-mode.style2 .O {
+      color: #42a5f5;
+    }
+    .dark-mode.style2 h1, .dark-mode.style2 .status {
+      color: #b2ebf2;
+    }
+    .dark-mode.style2 button {
+      background-color: darkgreen;
+      box-shadow: 0 0 10px green;
+      color: #b2ebf2;
+    }
+    .dark-mode.style2 button:disabled {
+      background-color: gray;
+      box-shadow: 0 0 10px gray;
+      cursor: not-allowed;
+    }
+    .dark-mode.style2 .options-modal {
+      background-color: #004d40;
+      color: #b2ebf2;
+    }
+    .dark-mode.style2 .toggle__rail {
+      background-color: #b2ebf2;
+    }
+    .dark-mode.style2 .toggle__circle {
+      box-shadow: inset 0 0 0 4px #004d40;
+      background-color: #b2ebf2;
+    }
+    .dark-mode.style2 .toggle__check:checked ~ .toggle__rail .toggle__circle {
+      box-shadow: inset 0 0 0 12px #b2ebf2;
+      background-color: #004d40;
+    }
+    .dark-mode.style2 .toggle__check:checked ~ .toggle__rail .toggle__border {
+      background-color: #b2ebf2;
+    }
+    .dark-mode.style2 #backgroundButton {
+      background-color: darkgreen;
+      box-shadow: 0 0 10px green;
+      color: #b2ebf2;
+      width: 200px; 
+    }
+    .dark-mode.style2 #backgroundButton:disabled {
+      background-color: gray;
+      box-shadow: 0 0 10px gray;
+      cursor: not-allowed;
+    }
+  
+    hr {
+      background-color: black;
+      border: none;
+      height: 1px;
+    }
+  
+  #easyButton, #mediumButton, #hardButton {
+  transition: background-color 0.5s, box-shadow 0.5s;
+}
+  </style>
+</head>
+<body>
+  <div>
+    <h1><span class="X">X</span> <span class="O">O</span> Game</h1>
+    <div class="container">
+      <div class="square" data-index="0"></div>
+      <div class="square" data-index="1"></div>
+      <div class="square" data-index="2"></div>
+      <div class="square" data-index="3"></div>
+      <div class="square" data-index="4"></div>
+      <div class="square" data-index="5"></div>
+      <div class="square" data-index="6"></div>
+      <div class="square" data-index="7"></div>
+      <div class="square" data-index="8"></div>
+    </div>
+    <div class="status" id="status">X’s turn</div>
+    <div style="text-align: center;">
+      <button id="resetButton">Reset</button>
+      <button id="optionsButton">Options</button>
+      <button id="botButton">Play with a bot</button>
+    </div>
+    <div id="difficultyOptions" style="text-align: center; display: none;">
+      <button id="easyButton">Easy</button>
+      <button id="mediumButton">Medium</button>
+      <button id="hardButton">Hard</button>
+    </div>
+  </div>
+
+  <div class="options-modal" id="optionsModal">
+    <input type="button" value="x" class="x" id="closeOptions">
+    <h3>Options</h3>
+    <hr><br>
+    <div class="toggle-container">
+      <span>Dark mode</span>
+      <label class="toggle__label">
+        <input type="checkbox" class="toggle__check" id="darkModeToggle">
+        <div class="toggle__rail">
+          <span class="toggle__circle"></span>
+          <span class="toggle__border"></span>
+        </div>
+      </label>
+    </div><br>
+    <div class="toggle-container">
+      <span>Style2</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+      <label class="toggle__label">
+        <input type="checkbox" class="toggle__check" id="style2Toggle">
+        <div class="toggle__rail">
+          <span class="toggle__circle"></span>
+          <span class="toggle__border"></span>
+        </div>
+      </label>
+    </div>
+    <br><br>
+    <button id="backgroundButton">Select a background</button>
+  </div>
+
+  <input type="file" id="backgroundInput" style="display: none;" accept="image/*">
+
+  <audio id="sound1" src="sound1.wav"></audio>
+  <audio id="sound2" src="sound2.wav"></audio>
+  <audio id="sound3" src="sound3.wav"></audio>
+
+  <script>
+    const squares = document.querySelectorAll('.square');
+    const resetButton = document.getElementById('resetButton');
+    const optionsButton = document.getElementById('optionsButton');
+    const botButton = document.getElementById('botButton');
+    const statusDisplay = document.getElementById('status');
+    const difficultyOptions = document.getElementById('difficultyOptions');
+    const easyButton = document.getElementById('easyButton');
+    const mediumButton = document.getElementById('mediumButton');
+    const hardButton = document.getElementById('hardButton');
+    const optionsModal = document.getElementById('optionsModal');
+    const closeOptions = document.getElementById('closeOptions');
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    const style2Toggle = document.getElementById('style2Toggle');
+    const backgroundButton = document.getElementById('backgroundButton');
+    const backgroundInput = document.getElementById('backgroundInput');
+
+    let currentPlayer = 'X';
+    let board = Array(9).fill(null);
+    let isGameActive = true;
+    let isPlayingWithBot = false;
+    let difficulty = '';
+    let soundsEnabled = true;
+
+    const sound1 = document.getElementById('sound1');
+    const sound2 = document.getElementById('sound2');
+    const sound3 = document.getElementById('sound3');
+
+    const winningCombinations = [
+      [0, 1, 2], [3, 4, 5], [6, 7, 8],
+      [0, 3, 6], [1, 4, 7], [2, 5, 8],
+      [0, 4, 8], [2, 4, 6]
+    ];
+
+    function playSound(audioElement) {
+      if (soundsEnabled) {
+        audioElement.currentTime = 0;
+        audioElement.play();
+      }
+    }
+
+    function handleSquareClick(event) {
+      playSound(sound1);
+      const index = event.target.getAttribute('data-index');
+      if (board[index] || !isGameActive || (isPlayingWithBot && currentPlayer === 'O')) return;
+
+      board[index] = currentPlayer;
+      event.target.classList.add(currentPlayer);
+      event.target.textContent = currentPlayer;
+
+      if (checkWinner()) {
+        statusDisplay.textContent = `${currentPlayer} wins!`;
+        isGameActive = false;
+        return;
+      }
+
+      if (board.every(square => square !== null)) {
+        statusDisplay.textContent = 'Draw!';
+        isGameActive = false;
+        return;
+      }
+
+      currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+      statusDisplay.textContent = `${currentPlayer}’s turn`;
+
+      if (isPlayingWithBot && currentPlayer === 'O') {
+        statusDisplay.textContent = 'Bot is thinking...';
+        setTimeout(botMove, 1000);
+      }
+    }
+
+    function botMove() {
+      const emptySquares = board.map((val, index) => val === null ? index : null).filter(val => val !== null);
+      let chosenIndex;
+
+      if (difficulty === 'Easy') {
+        chosenIndex = emptySquares[Math.floor(Math.random() * emptySquares.length)];
+      } else if (difficulty === 'Medium') {
+        chosenIndex = findBestMoveMedium();
+      } else if (difficulty === 'Hard') {
+        chosenIndex = findBestMoveHard();
+      }
+
+      board[chosenIndex] = currentPlayer;
+
+      const botSquare = document.querySelector(`.square[data-index="${chosenIndex}"]`);
+      botSquare.classList.add(currentPlayer);
+      botSquare.textContent = currentPlayer;
+
+      if (checkWinner()) {
+        statusDisplay.textContent = `${currentPlayer} wins!`;
+        isGameActive = false;
+        return;
+      }
+
+      if (board.every(square => square !== null)) {
+        statusDisplay.textContent = 'Draw!';
+        isGameActive = false;
+        return;
+      }
+
+      currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+      statusDisplay.textContent = `${currentPlayer}’s turn`;
+    }
+
+    function findBestMoveMedium() {
+      for (let i = 0; i < winningCombinations.length; i++) {
+        const [a, b, c] = winningCombinations[i];
+        if (board[a] && board[a] === board[b] && !board[c]) return c;
+        if (board[a] && board[a] === board[c] && !board[b]) return b;
+        if (board[b] && board[b] === board[c] && !board[a]) return a;
+      }
+      const emptySquares = board.map((val, index) => val === null ? index : null).filter(val => val !== null);
+      return emptySquares[Math.floor(Math.random() * emptySquares.length)];
+    }
+
+    function findBestMoveHard() {
+      const minimax = (newBoard, player) => {
+        const availSpots = newBoard.reduce((acc, val, index) => {
+          if (val === null) acc.push(index);
+          return acc;
+        }, []);
+
+        if (checkWin(newBoard, 'X')) return { score: -10 };
+        if (checkWin(newBoard, 'O')) return { score: 10 };
+        if (availSpots.length === 0) return { score: 0 };
+
+        const moves = [];
+        for (let i = 0; i < availSpots.length; i++) {
+          const move = {};
+          move.index = availSpots[i];
+          newBoard[availSpots[i]] = player;
+
+          if (player === 'O') {
+            const result = minimax(newBoard, 'X');
+            move.score = result.score;
+          } else {
+            const result = minimax(newBoard, 'O');
+            move.score = result.score;
+          }
+
+          newBoard[availSpots[i]] = null;
+          moves.push(move);
+        }
+
+        let bestMove;
+        if (player === 'O') {
+          let bestScore = -Infinity;
+          for (let i = 0; i < moves.length; i++) {
+            if (moves[i].score > bestScore) {
+              bestScore = moves[i].score;
+              bestMove = moves[i];
+            }
+          }
+        } else {
+          let bestScore = Infinity;
+          for (let i = 0; i < moves.length; i++) {
+            if (moves[i].score < bestScore) {
+              bestScore = moves[i].score;
+              bestMove = moves[i];
+            }
+          }
+        }
+
+        return bestMove;
+      };
+
+      return minimax(board, 'O').index;
+    }
+
+    function checkWin(board, player) {
+      return winningCombinations.some(combination => {
+        return combination.every(index => board[index] === player);
+      });
+    }
+
+    function checkWinner() {
+      return winningCombinations.some(combination => {
+        return combination.every(index => board[index] === currentPlayer);
+      });
+    }
+
+    function resetGame() {
+      playSound(sound3);
+      if (isPlayingWithBot) {
+        showDifficultyOptions();
+      } else {
+        board.fill(null);
+        squares.forEach(square => {
+          square.classList.remove('X', 'O');
+          square.textContent = '';
+        });
+        currentPlayer = 'X';
+        isGameActive = true;
+        statusDisplay.textContent = `${currentPlayer}’s turn`;
+      }
+    }
+
+    function showDifficultyOptions() {
+      difficultyOptions.style.display = 'block';
+      statusDisplay.textContent = 'Select difficulty:';
+      resetButton.style.display = 'none';
+      optionsButton.style.display = 'none';
+      botButton.style.display = 'none';
+    }
+
+    function setDifficulty(level) {
+      playSound(sound3);
+      difficulty = level;
+      difficultyOptions.style.display = 'none';
+      resetButton.textContent = 'Reset';
+      optionsButton.textContent = 'Options';
+      botButton.textContent = 'Play with a friend';
+      resetButton.style.display = 'block';
+      optionsButton.style.display = 'block';
+      botButton.style.display = 'block';
+      resetGameStateForBot();
+      isPlayingWithBot = true;
+      statusDisplay.textContent = `${currentPlayer}’s turn`;
+    }
+
+    function resetGameStateForBot() {
+      board.fill(null);
+      squares.forEach(square => {
+        square.classList.remove('X', 'O');
+        square.textContent = '';
+      });
+      currentPlayer = 'X';
+      isGameActive = true;
+      statusDisplay.textContent = `${currentPlayer}’s turn`;
+    }
+
+    function toggleBotMode() {
+      playSound(sound3);
+      if (isPlayingWithBot) {
+        isPlayingWithBot = false;
+        botButton.textContent = 'Play with a bot';
+        resetButton.textContent = 'Reset';
+        optionsButton.textContent = 'Options';
+        difficultyOptions.style.display = 'none';
+        resetGame();
+      } else {
+        showDifficultyOptions();
+        resetButton.textContent = 'Easy';
+        optionsButton.textContent = 'Medium';
+        botButton.textContent = 'Hard';
+      }
+    }
+
+    function openOptionsModal() {
+      playSound(sound3);
+      optionsModal.classList.add('show');
+    }
+
+    function closeOptionsModal() {
+      playSound(sound3);
+      optionsModal.classList.remove('show');
+    }
+
+    function toggleDarkMode() {
+      playSound(sound2);
+      const isChecked = darkModeToggle.checked;
+      if (isChecked) {
+        document.body.classList.add('dark-mode');
+      } else {
+        document.body.classList.remove('dark-mode');
+      }
+    }
+
+    function toggleStyle2() {
+      playSound(sound2);
+      const isChecked = style2Toggle.checked;
+      if (isChecked) {
+        document.body.classList.add('style2');
+      } else {
+        document.body.classList.remove('style2');
+      }
+    }
+
+    function changeBackground() {
+      playSound(sound3);
+      backgroundInput.click();
+    }
+
+    function setBackground(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          document.body.style.backgroundImage = `url(${e.target.result})`;
+          document.body.style.backgroundSize = 'cover';
+          document.body.style.backgroundPosition = 'center';
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    squares.forEach(square => {
+      square.addEventListener('mousedown', (event) => {
+        event.target.classList.add('pressed');
+      });
+      square.addEventListener('mouseup', (event) => {
+        event.target.classList.remove('pressed');
+        handleSquareClick(event);
+      });
+      square.addEventListener('mouseleave', (event) => {
+        event.target.classList.remove('pressed');
+      });
+      square.addEventListener('touchstart', (event) => {
+        event.target.classList.add('pressed');
+      });
+      square.addEventListener('touchend', (event) => {
+        event.target.classList.remove('pressed');
+        handleSquareClick(event);
+      });
+      square.addEventListener('touchcancel', (event) => {
+        event.target.classList.remove('pressed');
+      });
+    });
+
+    resetButton.addEventListener('click', resetGame);
+    optionsButton.addEventListener('click', openOptionsModal);
+    botButton.addEventListener('click', toggleBotMode);
+    closeOptions.addEventListener('click', closeOptionsModal);
+    darkModeToggle.addEventListener('change', toggleDarkMode);
+    style2Toggle.addEventListener('change', toggleStyle2);
+    backgroundButton.addEventListener('click', changeBackground);
+    backgroundInput.addEventListener('change', setBackground);
+    easyButton.addEventListener('click', () => setDifficulty('Easy'));
+    mediumButton.addEventListener('click', () => setDifficulty('Medium'));
+    hardButton.addEventListener('click', () => setDifficulty('Hard'));
+  
+  function showDifficultyOptions() {
+  difficultyOptions.style.display = 'block';
+  statusDisplay.textContent = 'Select difficulty:';
+  resetButton.style.display = 'none';
+  optionsButton.style.display = 'none';
+  botButton.style.display = 'none';
+
+  // تغيير لون الخلفية إلى شفاف
+  easyButton.style.backgroundColor = 'transparent';
+  mediumButton.style.backgroundColor = 'transparent';
+  hardButton.style.backgroundColor = 'transparent';
+
+  easyButton.style.boxShadow = 'none';
+  mediumButton.style.boxShadow = 'none';
+  hardButton.style.boxShadow = 'none';
+
+  // إعادة لون الخلفية إلى لونه الأصلي بعد فترة زمنية قصيرة
+  setTimeout(() => {
+    easyButton.style.backgroundColor = 'lime';
+    easyButton.style.boxShadow = '0 0 10px lime';
+
+    mediumButton.style.backgroundColor = 'orange';
+    mediumButton.style.boxShadow = '0 0 10px orange';
+
+    hardButton.style.backgroundColor = 'red';
+    hardButton.style.boxShadow = '0 0 10px red';
+  }, 50); // 50 ميلي ثانية (0.05 ثانية)
+}
+  </script>
+</body>
+</html>
