@@ -416,16 +416,21 @@
       box-shadow: 0 0 10px gray;
       cursor: not-allowed;
     }
-  
     hr {
       background-color: black;
       border: none;
       height: 1px;
     }
-  
-  #easyButton, #mediumButton, #hardButton {
-  transition: background-color 0.5s, box-shadow 0.5s;
-}
+    @keyframes flashAnimation {
+      0%, 100% { background-color: initial; }
+      50% { background-color: lime; }
+    }
+    .flash {
+      animation: flashAnimation 0.8s infinite;
+    }
+    #easyButton, #mediumButton, #hardButton {
+      transition: background-color 0.5s, box-shadow 0.5s;
+    }
   </style>
 </head>
 <body>
@@ -542,12 +547,14 @@
       if (checkWinner()) {
         statusDisplay.textContent = `${currentPlayer} wins!`;
         isGameActive = false;
+        flashWinningSquares(checkWinner());
         return;
       }
 
       if (board.every(square => square !== null)) {
         statusDisplay.textContent = 'Draw!';
         isGameActive = false;
+        flashDrawSquares();
         return;
       }
 
@@ -581,12 +588,14 @@
       if (checkWinner()) {
         statusDisplay.textContent = `${currentPlayer} wins!`;
         isGameActive = false;
+        flashWinningSquares(checkWinner());
         return;
       }
 
       if (board.every(square => square !== null)) {
         statusDisplay.textContent = 'Draw!';
         isGameActive = false;
+        flashDrawSquares();
         return;
       }
 
@@ -595,17 +604,30 @@
     }
 
     function findBestMoveMedium() {
-      for (let i = 0; i < winningCombinations.length; i++) {
-        const [a, b, c] = winningCombinations[i];
-        if (board[a] && board[a] === board[b] && !board[c]) return c;
-        if (board[a] && board[a] === board[c] && !board[b]) return b;
-        if (board[b] && board[b] === board[c] && !board[a]) return a;
+      if (Math.random() < 0.4) {
+        const emptySquares = board.map((val, index) => val === null ? index : null).filter(val => val !== null);
+        return emptySquares[Math.floor(Math.random() * emptySquares.length)];
+      } else {
+        for (let i = 0; i < winningCombinations.length; i++) {
+          const [a, b, c] = winningCombinations[i];
+          if (board[a] === 'O' && board[a] === board[b] && !board[c]) return c;
+          if (board[a] === 'O' && board[a] === board[c] && !board[b]) return b;
+          if (board[b] === 'O' && board[b] === board[c] && !board[a]) return a;
+          if (board[a] === 'X' && board[a] === board[b] && !board[c]) return c;
+          if (board[a] === 'X' && board[a] === board[c] && !board[b]) return b;
+          if (board[b] === 'X' && board[b] === board[c] && !board[a]) return a;
+        }
+        const emptySquares = board.map((val, index) => val === null ? index : null).filter(val => val !== null);
+        return emptySquares[Math.floor(Math.random() * emptySquares.length)];
       }
-      const emptySquares = board.map((val, index) => val === null ? index : null).filter(val => val !== null);
-      return emptySquares[Math.floor(Math.random() * emptySquares.length)];
     }
 
     function findBestMoveHard() {
+      if (Math.random() < 0.27) { // 27% chance for a random move (20% less smart + 7% more random)
+        const emptySquares = board.map((val, index) => val === null ? index : null).filter(val => val !== null);
+        return emptySquares[Math.floor(Math.random() * emptySquares.length)];
+      }
+
       const minimax = (newBoard, player) => {
         const availSpots = newBoard.reduce((acc, val, index) => {
           if (val === null) acc.push(index);
@@ -666,7 +688,7 @@
     }
 
     function checkWinner() {
-      return winningCombinations.some(combination => {
+      return winningCombinations.find(combination => {
         return combination.every(index => board[index] === currentPlayer);
       });
     }
@@ -678,7 +700,7 @@
       } else {
         board.fill(null);
         squares.forEach(square => {
-          square.classList.remove('X', 'O');
+          square.classList.remove('X', 'O', 'flash');
           square.textContent = '';
         });
         currentPlayer = 'X';
@@ -693,6 +715,27 @@
       resetButton.style.display = 'none';
       optionsButton.style.display = 'none';
       botButton.style.display = 'none';
+
+      // تغيير لون الخلفية إلى شفاف
+      easyButton.style.backgroundColor = 'transparent';
+      mediumButton.style.backgroundColor = 'transparent';
+      hardButton.style.backgroundColor = 'transparent';
+
+      easyButton.style.boxShadow = 'none';
+      mediumButton.style.boxShadow = 'none';
+      hardButton.style.boxShadow = 'none';
+
+      // إعادة لون الخلفية إلى لونه الأصلي بعد فترة زمنية قصيرة
+      setTimeout(() => {
+        easyButton.style.backgroundColor = 'lime';
+        easyButton.style.boxShadow = '0 0 10px lime';
+
+        mediumButton.style.backgroundColor = 'orange';
+        mediumButton.style.boxShadow = '0 0 10px orange';
+
+        hardButton.style.backgroundColor = 'red';
+        hardButton.style.boxShadow = '0 0 10px red';
+      }, 50); // 50 ميلي ثانية (0.05 ثانية)
     }
 
     function setDifficulty(level) {
@@ -708,12 +751,30 @@
       resetGameStateForBot();
       isPlayingWithBot = true;
       statusDisplay.textContent = `${currentPlayer}’s turn`;
+
+      // إعادة التأثير البسيط عند اختيار الصعوبة
+      if (level === 'Easy') {
+        easyButton.classList.add('difficulty-anim');
+        setTimeout(() => {
+          easyButton.classList.remove('difficulty-anim');
+        }, 500);
+      } else if (level === 'Medium') {
+        mediumButton.classList.add('difficulty-anim');
+        setTimeout(() => {
+          mediumButton.classList.remove('difficulty-anim');
+        }, 500);
+      } else if (level === 'Hard') {
+        hardButton.classList.add('difficulty-anim');
+        setTimeout(() => {
+          hardButton.classList.remove('difficulty-anim');
+        }, 500);
+      }
     }
 
     function resetGameStateForBot() {
       board.fill(null);
       squares.forEach(square => {
-        square.classList.remove('X', 'O');
+        square.classList.remove('X', 'O', 'flash');
         square.textContent = '';
       });
       currentPlayer = 'X';
@@ -786,6 +847,19 @@
       }
     }
 
+    function flashWinningSquares(winningCombination) {
+      winningCombination.forEach(index => {
+        const square = document.querySelector(`.square[data-index="${index}"]`);
+        square.classList.add('flash');
+      });
+    }
+
+    function flashDrawSquares() {
+      squares.forEach(square => {
+        square.classList.add('flash');
+      });
+    }
+
     squares.forEach(square => {
       square.addEventListener('mousedown', (event) => {
         event.target.classList.add('pressed');
@@ -820,35 +894,6 @@
     easyButton.addEventListener('click', () => setDifficulty('Easy'));
     mediumButton.addEventListener('click', () => setDifficulty('Medium'));
     hardButton.addEventListener('click', () => setDifficulty('Hard'));
-  
-  function showDifficultyOptions() {
-  difficultyOptions.style.display = 'block';
-  statusDisplay.textContent = 'Select difficulty:';
-  resetButton.style.display = 'none';
-  optionsButton.style.display = 'none';
-  botButton.style.display = 'none';
-
-  // تغيير لون الخلفية إلى شفاف
-  easyButton.style.backgroundColor = 'transparent';
-  mediumButton.style.backgroundColor = 'transparent';
-  hardButton.style.backgroundColor = 'transparent';
-
-  easyButton.style.boxShadow = 'none';
-  mediumButton.style.boxShadow = 'none';
-  hardButton.style.boxShadow = 'none';
-
-  // إعادة لون الخلفية إلى لونه الأصلي بعد فترة زمنية قصيرة
-  setTimeout(() => {
-    easyButton.style.backgroundColor = 'lime';
-    easyButton.style.boxShadow = '0 0 10px lime';
-
-    mediumButton.style.backgroundColor = 'orange';
-    mediumButton.style.boxShadow = '0 0 10px orange';
-
-    hardButton.style.backgroundColor = 'red';
-    hardButton.style.boxShadow = '0 0 10px red';
-  }, 50); // 50 ميلي ثانية (0.05 ثانية)
-}
   </script>
 </body>
 </html>
